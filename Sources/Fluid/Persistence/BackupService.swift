@@ -20,6 +20,11 @@ struct SettingsBackupPayload: Codable, Equatable {
     let selectedCohereLanguage: SettingsStore.CohereLanguage
     let selectedNemotronLanguage: SettingsStore.NemotronLanguage?
     let selectedAppleSpeechLocaleIdentifier: String?
+    // Custom ASR server configuration; nil in backups written before this setting existed.
+    // The API key is deliberately excluded and stays in the Keychain.
+    let customASRBaseURL: String?
+    let customASRModelName: String?
+    let customASRLanguage: String?
     let hotkeyShortcut: HotkeyShortcut
     // Older backup files only contain hotkeyShortcut; nil restores that legacy single shortcut.
     // swiftlint:disable:next discouraged_optional_collection

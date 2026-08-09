@@ -329,6 +329,7 @@ final class ASRService: ObservableObject {
         self.nemotronProviders.removeAll()
         self.whisperProvider = nil
         self.appleSpeechProvider = nil
+        self.openAICompatibleProvider = nil
         self._appleSpeechAnalyzerProvider = nil
         self.isAsrReady = false
         self.isLoadingModel = false
@@ -694,6 +695,7 @@ final class ASRService: ObservableObject {
         self.externalCoreMLProvider = nil
         self.whisperProvider = nil
         self.appleSpeechProvider = nil
+        self.openAICompatibleProvider = nil
         self._appleSpeechAnalyzerProvider = nil
 
         // CRITICAL FIX: Check if the NEW model's files exist on disk

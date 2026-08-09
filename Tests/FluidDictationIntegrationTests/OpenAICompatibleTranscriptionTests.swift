@@ -1,8 +1,7 @@
+@testable import FluidVoice_Debug
 import XCTest
 
-@testable import FluidVoice_Debug
-
-final class OpenAICompatibleTranscriptionRequestTests: XCTestCase {
+final class OpenAICompatibleTranscriptionTests: XCTestCase {
     // MARK: - Endpoint URL
 
     func testEndpointAppendsAudioTranscriptionsToV1BaseURL() throws {
@@ -38,12 +37,13 @@ final class OpenAICompatibleTranscriptionRequestTests: XCTestCase {
         let contentType = try XCTUnwrap(request.value(forHTTPHeaderField: "Content-Type"))
         XCTAssertTrue(contentType.hasPrefix("multipart/form-data; boundary="))
 
+        // The body mixes text fields with raw WAV bytes, so it is not decodable as UTF-8.
+        // Match the field markers as byte sequences instead.
         let body = try XCTUnwrap(request.httpBody)
-        let bodyString = String(decoding: body, as: UTF8.self)
-        XCTAssertTrue(bodyString.contains("name=\"model\"\r\n\r\ngcoli/whisper-large-v3-swiss-german-mlx-fp16"))
-        XCTAssertTrue(bodyString.contains("name=\"language\"\r\n\r\nde"))
-        XCTAssertTrue(bodyString.contains("filename=\"audio.wav\""))
-        XCTAssertNotNil(body.range(of: Data("RIFF".utf8)))
+        XCTAssertTrue(body.contains(text: "name=\"model\"\r\n\r\ngcoli/whisper-large-v3-swiss-german-mlx-fp16"))
+        XCTAssertTrue(body.contains(text: "name=\"language\"\r\n\r\nde"))
+        XCTAssertTrue(body.contains(text: "filename=\"audio.wav\""))
+        XCTAssertTrue(body.contains(text: "RIFF"))
     }
 
     func testRequestOmitsAuthAndLanguageWhenEmpty() throws {
@@ -55,8 +55,9 @@ final class OpenAICompatibleTranscriptionRequestTests: XCTestCase {
             wavData: Data()
         )
         XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
-        let bodyString = String(decoding: try XCTUnwrap(request.httpBody), as: UTF8.self)
-        XCTAssertFalse(bodyString.contains("name=\"language\""))
+        let body = try XCTUnwrap(request.httpBody)
+        XCTAssertFalse(body.contains(text: "name=\"language\""))
+        XCTAssertTrue(body.contains(text: "name=\"model\"\r\n\r\nwhisper-large-v3"))
     }
 
     func testRequestRejectsEmptyModelName() {
@@ -78,12 +79,12 @@ final class OpenAICompatibleTranscriptionRequestTests: XCTestCase {
         let wav = OpenAICompatibleTranscriptionProvider.encodeWAV(samples: samples, sampleRate: 16000)
 
         XCTAssertEqual(wav.count, 44 + samples.count * 2)
-        XCTAssertEqual(String(decoding: wav[0 ..< 4], as: UTF8.self), "RIFF")
-        XCTAssertEqual(String(decoding: wav[8 ..< 12], as: UTF8.self), "WAVE")
-        XCTAssertEqual(String(decoding: wav[36 ..< 40], as: UTF8.self), "data")
+        XCTAssertEqual(String(bytes: wav[0 ..< 4], encoding: .utf8), "RIFF")
+        XCTAssertEqual(String(bytes: wav[8 ..< 12], encoding: .utf8), "WAVE")
+        XCTAssertEqual(String(bytes: wav[36 ..< 40], encoding: .utf8), "data")
 
         func int16(at offset: Int) -> Int16 {
-            Int16(littleEndian: wav[offset ..< offset + 2].withUnsafeBytes { $0.load(as: Int16.self) })
+            Int16(littleEndian: wav[offset ..< offset + 2].withUnsafeBytes { $0.loadUnaligned(as: Int16.self) })
         }
         XCTAssertEqual(int16(at: 44), 0)
         XCTAssertEqual(int16(at: 46), Int16.max)
@@ -91,12 +92,19 @@ final class OpenAICompatibleTranscriptionRequestTests: XCTestCase {
         XCTAssertEqual(int16(at: 50), Int16.max) // clamped from 2.0
 
         // Sample rate at offset 24 (little-endian UInt32)
-        let sampleRate = wav[24 ..< 28].withUnsafeBytes { UInt32(littleEndian: $0.load(as: UInt32.self)) }
+        let sampleRate = wav[24 ..< 28].withUnsafeBytes { UInt32(littleEndian: $0.loadUnaligned(as: UInt32.self)) }
         XCTAssertEqual(sampleRate, 16000)
     }
 
     func testWAVEncodingEmptySamples() {
         let wav = OpenAICompatibleTranscriptionProvider.encodeWAV(samples: [], sampleRate: 16000)
         XCTAssertEqual(wav.count, 44)
+    }
+}
+
+private extension Data {
+    /// Byte-level match, for multipart bodies that mix text fields with binary payloads.
+    func contains(text: String) -> Bool {
+        self.range(of: Data(text.utf8)) != nil
     }
 }

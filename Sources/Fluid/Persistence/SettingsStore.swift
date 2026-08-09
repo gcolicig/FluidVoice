@@ -2984,6 +2984,9 @@ final class SettingsStore: ObservableObject {
             selectedCohereLanguage: self.selectedCohereLanguage,
             selectedNemotronLanguage: self.selectedNemotronLanguage,
             selectedAppleSpeechLocaleIdentifier: self.selectedAppleSpeechLocaleIdentifier,
+            customASRBaseURL: self.customASRBaseURL,
+            customASRModelName: self.customASRModelName,
+            customASRLanguage: self.customASRLanguage,
             hotkeyShortcut: self.hotkeyShortcut,
             primaryDictationShortcuts: self.primaryDictationShortcuts,
             promptModeHotkeyShortcut: self.promptModeHotkeyShortcut,
@@ -3098,6 +3101,15 @@ final class SettingsStore: ObservableObject {
         }
         if let selectedAppleSpeechLocaleIdentifier = payload.selectedAppleSpeechLocaleIdentifier {
             self.selectedAppleSpeechLocaleIdentifier = selectedAppleSpeechLocaleIdentifier
+        }
+        if let customASRBaseURL = payload.customASRBaseURL {
+            self.customASRBaseURL = customASRBaseURL
+        }
+        if let customASRModelName = payload.customASRModelName {
+            self.customASRModelName = customASRModelName
+        }
+        if let customASRLanguage = payload.customASRLanguage {
+            self.customASRLanguage = customASRLanguage
         }
         self.primaryDictationShortcuts = payload.primaryDictationShortcuts ?? [payload.hotkeyShortcut]
         self.promptModeHotkeyShortcut = payload.promptModeHotkeyShortcut
@@ -4788,6 +4800,15 @@ final class SettingsStore: ObservableObject {
                 return "OpenAI"
             case .customOpenAICompatible:
                 return "Custom"
+            }
+        }
+
+        /// Whether this model keeps downloaded artifacts on disk that a user can remove.
+        /// Built-in Apple models and remote endpoints have nothing to delete.
+        var hasDeletableModelFiles: Bool {
+            switch self {
+            case .appleSpeech, .appleSpeechAnalyzer, .customOpenAICompatible: return false
+            default: return true
             }
         }
 

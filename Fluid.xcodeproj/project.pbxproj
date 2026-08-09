@@ -26,7 +26,7 @@
 		7CDB0A302F3C4D5600FB7CAD /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7CDB0A2C2F3C4D5600FB7CAD /* XCTest.framework */; };
 		7CE006BD2E80EBE600DDCCD6 /* AppUpdater in Frameworks */ = {isa = PBXBuildFile; productRef = 7CE006BC2E80EBE600DDCCD6 /* AppUpdater */; };
 		86CAA2D4EF18433096185602 /* LLMClientRequestBodyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 343B29013F4441D6A797D12D /* LLMClientRequestBodyTests.swift */; };
-		0A1C0000000000000000A002 /* OpenAICompatibleTranscriptionRequestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1C0000000000000000A001 /* OpenAICompatibleTranscriptionRequestTests.swift */; };
+		0A1C0000000000000000A002 /* OpenAICompatibleTranscriptionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A1C0000000000000000A001 /* OpenAICompatibleTranscriptionTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,7 +55,7 @@
 
 /* Begin PBXFileReference section */
 		343B29013F4441D6A797D12D /* LLMClientRequestBodyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LLMClientRequestBodyTests.swift; sourceTree = "<group>"; };
-		0A1C0000000000000000A001 /* OpenAICompatibleTranscriptionRequestTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAICompatibleTranscriptionRequestTests.swift; sourceTree = "<group>"; };
+		0A1C0000000000000000A001 /* OpenAICompatibleTranscriptionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAICompatibleTranscriptionTests.swift; sourceTree = "<group>"; };
 		980330F3CE464336ADCE3E23 /* TemperatureSupportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemperatureSupportTests.swift; sourceTree = "<group>"; };
 		A62300000000000000000001 /* AudioBufferConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioBufferConverterTests.swift; sourceTree = "<group>"; };
 		D1A600000000000000000201 /* SpeakerTurnMergingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerTurnMergingTests.swift; sourceTree = "<group>"; };
@@ -137,7 +137,7 @@
 				7CDB0A292F3C4D5600FB7CAD /* DictationE2ETests.swift */,
 				7C91B0022F42AA0100C0DEF0 /* HotkeyShortcutTests.swift */,
 				343B29013F4441D6A797D12D /* LLMClientRequestBodyTests.swift */,
-				0A1C0000000000000000A001 /* OpenAICompatibleTranscriptionRequestTests.swift */,
+				0A1C0000000000000000A001 /* OpenAICompatibleTranscriptionTests.swift */,
 				980330F3CE464336ADCE3E23 /* TemperatureSupportTests.swift */,
 				A62300000000000000000001 /* AudioBufferConverterTests.swift */,
 				D1A600000000000000000201 /* SpeakerTurnMergingTests.swift */,
@@ -300,7 +300,7 @@
 				7CDB0A2D2F3C4D5600FB7CAD /* DictationE2ETests.swift in Sources */,
 				7C91B0012F42AA0100C0DEF0 /* HotkeyShortcutTests.swift in Sources */,
 				86CAA2D4EF18433096185602 /* LLMClientRequestBodyTests.swift in Sources */,
-				0A1C0000000000000000A002 /* OpenAICompatibleTranscriptionRequestTests.swift in Sources */,
+				0A1C0000000000000000A002 /* OpenAICompatibleTranscriptionTests.swift in Sources */,
 				272BFB5CB271489892CAE50C /* TemperatureSupportTests.swift in Sources */,
 				A62300000000000000000002 /* AudioBufferConverterTests.swift in Sources */,
 				D1A600000000000000000202 /* SpeakerTurnMergingTests.swift in Sources */,

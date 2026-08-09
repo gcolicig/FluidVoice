@@ -437,6 +437,13 @@ extension VoiceEngineSettingsView {
                 }
             } else if model.isInstalled {
                 HStack(spacing: 8) {
+                    // Remote endpoints must be configurable before activation, so this
+                    // sits outside the isActive branch that hosts the language pickers.
+                    if model == .customOpenAICompatible {
+                        self.customASRConfigButton
+                            .disabled(self.viewModel.areSpeechModelActionsBlocked)
+                    }
+
                     if isActive {
                         self.speechModelLanguagePicker(for: model)
                             .disabled(self.viewModel.areSpeechModelActionsBlocked)
@@ -459,7 +466,7 @@ extension VoiceEngineSettingsView {
                         .disabled(self.viewModel.areSpeechModelActionsBlocked)
                     }
 
-                    if !model.usesAppleLogo {
+                    if model.hasDeletableModelFiles {
                         if isSelected {
                             Button {
                                 self.viewModel.deleteSpeechModel(model)
@@ -569,8 +576,6 @@ extension VoiceEngineSettingsView {
             .buttonStyle(.plain)
         } else if model == .nemotronOffline || model == .nemotronStreaming || model == .nemotronStreaming320 {
             self.nemotronLanguagePickerButton
-        } else if model == .customOpenAICompatible {
-            self.customASRConfigButton
         }
     }
 
@@ -632,8 +637,9 @@ extension VoiceEngineSettingsView {
                 Text("API Key")
                     .font(self.theme.typography.bodySmall)
                     .foregroundStyle(self.voiceEngineSecondaryText)
-                SecureField("Stored in Keychain", text: self.$settings.customASRAPIKey)
+                SecureField("Stored in Keychain", text: self.$customASRAPIKeyDraft)
                     .textFieldStyle(.roundedBorder)
+                    .onSubmit { self.commitCustomASRAPIKey() }
             }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -646,6 +652,13 @@ extension VoiceEngineSettingsView {
         }
         .padding(14)
         .frame(width: 320)
+        .onAppear { self.customASRAPIKeyDraft = self.settings.customASRAPIKey }
+        .onDisappear { self.commitCustomASRAPIKey() }
+    }
+
+    private func commitCustomASRAPIKey() {
+        guard self.customASRAPIKeyDraft != self.settings.customASRAPIKey else { return }
+        self.settings.customASRAPIKey = self.customASRAPIKeyDraft
     }
 
     private func languageChipLabel(_ title: String) -> some View {

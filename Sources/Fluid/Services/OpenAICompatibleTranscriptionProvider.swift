@@ -18,7 +18,7 @@ enum OpenAICompatibleTranscriptionError: LocalizedError {
             return "No model name configured for the custom ASR server."
         case .emptyAudio:
             return "No audio captured to transcribe."
-        case .serverError(let statusCode, let message):
+        case let .serverError(statusCode, message):
             if statusCode == 401 {
                 return "Custom ASR server rejected the API key (HTTP 401). Check the key in Voice Engine settings."
             }

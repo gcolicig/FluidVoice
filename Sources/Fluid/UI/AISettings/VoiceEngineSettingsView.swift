@@ -6,6 +6,9 @@ struct VoiceEngineSettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @State var isShowingNemotronLanguagePicker = false
     @State var isShowingCustomASRConfig = false
+    /// Buffers the API key while the popover is open so the Keychain is written once,
+    /// not on every keystroke (the setter trims, which would eat leading whitespace).
+    @State var customASRAPIKeyDraft = ""
     let theme: AppTheme
 
     var voiceEngineTitleText: Color {
