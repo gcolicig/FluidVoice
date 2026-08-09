@@ -253,6 +253,7 @@ final class ASRService: ObservableObject {
     private var nemotronProviders: [NemotronProvider.Mode: NemotronProvider] = [:]
     private var whisperProvider: WhisperProvider?
     private var appleSpeechProvider: AppleSpeechProvider?
+    private var openAICompatibleProvider: OpenAICompatibleTranscriptionProvider?
     /// Stored as Any? because @available cannot be applied to stored properties
     private var _appleSpeechAnalyzerProvider: Any?
 
@@ -359,9 +360,21 @@ final class ASRService: ObservableObject {
             return self.getNemotronProvider(mode: model.nemotronProviderMode)
         case .qwen3Asr:
             return self.getFluidAudioProvider()
+        case .customOpenAICompatible:
+            return self.getOpenAICompatibleProvider()
         default:
             return self.getWhisperProvider()
         }
+    }
+
+    private func getOpenAICompatibleProvider() -> OpenAICompatibleTranscriptionProvider {
+        if let existing = openAICompatibleProvider {
+            return existing
+        }
+        let provider = OpenAICompatibleTranscriptionProvider()
+        self.openAICompatibleProvider = provider
+        DebugLogger.shared.info("ASRService: Created OpenAI-compatible remote provider", source: "ASRService")
+        return provider
     }
 
     private func getFluidAudioProvider() -> FluidAudioProvider {
@@ -561,6 +574,8 @@ final class ASRService: ObservableObject {
         case .qwen3Asr:
             // Qwen support removed; route legacy requests to Parakeet v3.
             return FluidAudioProvider(modelOverride: .parakeetTDT, configureWordBoosting: false)
+        case .customOpenAICompatible:
+            return OpenAICompatibleTranscriptionProvider()
         default:
             // Whisper models - create provider with specific model override
             return WhisperProvider(modelOverride: model)

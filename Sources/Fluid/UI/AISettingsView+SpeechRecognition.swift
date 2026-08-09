@@ -569,7 +569,83 @@ extension VoiceEngineSettingsView {
             .buttonStyle(.plain)
         } else if model == .nemotronOffline || model == .nemotronStreaming || model == .nemotronStreaming320 {
             self.nemotronLanguagePickerButton
+        } else if model == .customOpenAICompatible {
+            self.customASRConfigButton
         }
+    }
+
+    private var customASRConfigButton: some View {
+        Button {
+            self.isShowingCustomASRConfig.toggle()
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: "gearshape")
+                    .font(self.theme.typography.bodySmall)
+                    .foregroundStyle(self.theme.palette.accent)
+                Text("Configure")
+                    .lineLimit(1)
+                    .fontWeight(.semibold)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(self.voiceEngineTertiaryText)
+            }
+            .font(self.theme.typography.bodySmallStrong)
+            .frame(minHeight: 24)
+            .padding(.horizontal, 9)
+            .background(
+                Capsule()
+                    .fill(self.theme.palette.accent.opacity(0.10))
+                    .overlay(
+                        Capsule()
+                            .stroke(self.theme.palette.accent.opacity(0.28), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: self.$isShowingCustomASRConfig, arrowEdge: .bottom) {
+            self.customASRConfigPopover
+        }
+    }
+
+    private var customASRConfigPopover: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Custom ASR Server")
+                .font(self.theme.typography.bodySmallStrong)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Base URL")
+                    .font(self.theme.typography.bodySmall)
+                    .foregroundStyle(self.voiceEngineSecondaryText)
+                TextField("http://127.0.0.1:8888/v1", text: self.$settings.customASRBaseURL)
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Model")
+                    .font(self.theme.typography.bodySmall)
+                    .foregroundStyle(self.voiceEngineSecondaryText)
+                TextField("e.g. gcoli/whisper-large-v3-swiss-german-mlx-fp16", text: self.$settings.customASRModelName)
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("API Key")
+                    .font(self.theme.typography.bodySmall)
+                    .foregroundStyle(self.voiceEngineSecondaryText)
+                SecureField("Stored in Keychain", text: self.$settings.customASRAPIKey)
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Language (optional, ISO code)")
+                    .font(self.theme.typography.bodySmall)
+                    .foregroundStyle(self.voiceEngineSecondaryText)
+                TextField("Leave empty for auto-detect, e.g. de", text: self.$settings.customASRLanguage)
+                    .textFieldStyle(.roundedBorder)
+            }
+        }
+        .padding(14)
+        .frame(width: 320)
     }
 
     private func languageChipLabel(_ title: String) -> some View {

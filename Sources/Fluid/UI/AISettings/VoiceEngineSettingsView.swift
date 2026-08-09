@@ -5,6 +5,7 @@ struct VoiceEngineSettingsView: View {
     @ObservedObject var settings: SettingsStore
     @Environment(\.colorScheme) var colorScheme
     @State var isShowingNemotronLanguagePicker = false
+    @State var isShowingCustomASRConfig = false
     let theme: AppTheme
 
     var voiceEngineTitleText: Color {
