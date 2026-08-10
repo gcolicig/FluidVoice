@@ -9,6 +9,7 @@ struct VoiceEngineSettingsView: View {
     /// Buffers the API key while the popover is open so the Keychain is written once,
     /// not on every keystroke (the setter trims, which would eat leading whitespace).
     @State var customASRAPIKeyDraft = ""
+    @FocusState var isCustomASRAPIKeyFocused: Bool
     let theme: AppTheme
 
     var voiceEngineTitleText: Color {

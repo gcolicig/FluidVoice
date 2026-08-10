@@ -639,7 +639,13 @@ extension VoiceEngineSettingsView {
                     .foregroundStyle(self.voiceEngineSecondaryText)
                 SecureField("Stored in Keychain", text: self.$customASRAPIKeyDraft)
                     .textFieldStyle(.roundedBorder)
+                    .focused(self.$isCustomASRAPIKeyFocused)
                     .onSubmit { self.commitCustomASRAPIKey() }
+                    .onChange(of: self.isCustomASRAPIKeyFocused) { _, isFocused in
+                        // Persist as soon as the field is left, so the draft survives
+                        // a window close that never delivers onDisappear.
+                        if !isFocused { self.commitCustomASRAPIKey() }
+                    }
             }
 
             VStack(alignment: .leading, spacing: 4) {

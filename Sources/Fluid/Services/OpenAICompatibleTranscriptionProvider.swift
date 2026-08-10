@@ -59,13 +59,40 @@ final class OpenAICompatibleTranscriptionProvider: TranscriptionProvider {
     // MARK: - Lifecycle
 
     func prepare(progressHandler: ((ModelPreparationProgress) -> Void)?) async throws {
-        // Nothing to download; just validate the configuration is usable.
-        _ = try Self.endpointURL(baseURL: SettingsStore.shared.customASRBaseURL)
-        guard !SettingsStore.shared.customASRModelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        self.isReady = false
+
+        // Nothing to download; validate the configuration and confirm the server answers.
+        let settings = SettingsStore.shared
+        _ = try Self.endpointURL(baseURL: settings.customASRBaseURL)
+        guard !settings.customASRModelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw OpenAICompatibleTranscriptionError.missingModelName
         }
+        try await self.verifyEndpointReachable(baseURL: settings.customASRBaseURL, apiKey: settings.customASRAPIKey)
+
         self.isReady = true
         DebugLogger.shared.info("OpenAICompatibleTranscriptionProvider ready", source: "OpenAICompatibleTranscriptionProvider")
+    }
+
+    /// The dictation path swallows transcription errors and returns empty text, so a wrong key
+    /// or an unreachable host would surface as a silently empty dictation. Probing here moves
+    /// that failure to model activation, where the error is shown to the user.
+    private func verifyEndpointReachable(baseURL: String, apiKey: String) async throws {
+        var request = URLRequest(url: try Self.modelsURL(baseURL: baseURL))
+        request.httpMethod = "GET"
+        request.timeoutInterval = 15
+        let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !key.isEmpty {
+            request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        }
+
+        let (data, response) = try await self.session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else { return }
+        // Servers that do not implement /models still transcribe fine, so only reject auth failures.
+        guard httpResponse.statusCode == 401 || httpResponse.statusCode == 403 else { return }
+        throw OpenAICompatibleTranscriptionError.serverError(
+            statusCode: httpResponse.statusCode,
+            message: Self.extractServerMessage(from: data)
+        )
     }
 
     func modelsExistOnDisk() -> Bool {
@@ -125,17 +152,25 @@ final class OpenAICompatibleTranscriptionProvider: TranscriptionProvider {
 
     // MARK: - Request Construction (internal for tests)
 
-    /// Resolves the transcription endpoint from the configured base URL.
-    /// Appends `/audio/transcriptions` unless the URL already points at it.
-    static func endpointURL(baseURL: String) throws -> URL {
+    /// The API root, with a trailing transcription path stripped so sibling
+    /// endpoints such as `/models` can be derived from the same setting.
+    static func normalizedBaseURL(_ baseURL: String) throws -> URL {
         let trimmed = baseURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard var url = URL(string: trimmed), url.scheme != nil, url.host != nil else {
+        guard let url = URL(string: trimmed), url.scheme != nil, url.host != nil else {
             throw OpenAICompatibleTranscriptionError.invalidBaseURL(baseURL)
         }
-        if !url.path.hasSuffix("/audio/transcriptions") {
-            url.appendPathComponent("audio/transcriptions")
-        }
-        return url
+        guard url.path.hasSuffix("/audio/transcriptions") else { return url }
+        return url.deletingLastPathComponent().deletingLastPathComponent()
+    }
+
+    /// Resolves the transcription endpoint from the configured base URL.
+    static func endpointURL(baseURL: String) throws -> URL {
+        try self.normalizedBaseURL(baseURL).appendingPathComponent("audio/transcriptions")
+    }
+
+    /// Resolves the model-listing endpoint, used as a reachability and auth probe.
+    static func modelsURL(baseURL: String) throws -> URL {
+        try self.normalizedBaseURL(baseURL).appendingPathComponent("models")
     }
 
     static func makeRequest(
@@ -212,11 +247,17 @@ final class OpenAICompatibleTranscriptionProvider: TranscriptionProvider {
 
         data.append(Data("data".utf8))
         appendUInt32(UInt32(dataSize))
-        for sample in samples {
-            let clamped = max(-1.0, min(1.0, sample))
-            let value = Int16(clamped * Float(Int16.max))
-            withUnsafeBytes(of: value.littleEndian) { data.append(contentsOf: $0) }
+
+        // Convert in one pass and append the payload in a single write; a per-sample
+        // append costs millions of calls on a multi-minute dictation.
+        let pcm = [Int16](unsafeUninitializedCapacity: samples.count) { buffer, initializedCount in
+            for (index, sample) in samples.enumerated() {
+                let clamped = max(-1.0, min(1.0, sample))
+                buffer[index] = Int16(clamped * Float(Int16.max)).littleEndian
+            }
+            initializedCount = samples.count
         }
+        pcm.withUnsafeBytes { data.append(contentsOf: $0) }
 
         return data
     }

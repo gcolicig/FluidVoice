@@ -20,6 +20,18 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
         XCTAssertThrowsError(try OpenAICompatibleTranscriptionProvider.endpointURL(baseURL: "not a url"))
     }
 
+    func testModelsURLIsDerivedFromApiRoot() throws {
+        let fromRoot = try OpenAICompatibleTranscriptionProvider.modelsURL(baseURL: "http://127.0.0.1:8888/v1")
+        XCTAssertEqual(fromRoot.absoluteString, "http://127.0.0.1:8888/v1/models")
+
+        // A base URL that already carries the transcription path must resolve to the
+        // same sibling endpoint rather than nesting under it.
+        let fromFullPath = try OpenAICompatibleTranscriptionProvider.modelsURL(
+            baseURL: "http://127.0.0.1:8888/v1/audio/transcriptions"
+        )
+        XCTAssertEqual(fromFullPath.absoluteString, "http://127.0.0.1:8888/v1/models")
+    }
+
     // MARK: - Request Construction
 
     func testRequestContainsAuthHeaderModelFieldAndWAV() throws {
