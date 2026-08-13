@@ -5345,7 +5345,7 @@ extension SettingsStore {
     var customASRModelName: String {
         get {
             self.defaults.string(forKey: Keys.customASRModelName)
-                ?? "gcoli/whisper-large-v3-swiss-german-mlx-fp16"
+                ?? "gcoli/whisper-large-v3-swiss-german-mlx-q8"
         }
         set {
             objectWillChange.send()

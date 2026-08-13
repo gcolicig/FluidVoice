@@ -39,7 +39,7 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
         let request = try OpenAICompatibleTranscriptionProvider.makeRequest(
             baseURL: "http://127.0.0.1:8888/v1",
             apiKey: "test-key",
-            modelName: "gcoli/whisper-large-v3-swiss-german-mlx-fp16",
+            modelName: "gcoli/whisper-large-v3-swiss-german-mlx-q8",
             language: "de",
             wavData: wav
         )
@@ -52,7 +52,7 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
         // The body mixes text fields with raw WAV bytes, so it is not decodable as UTF-8.
         // Match the field markers as byte sequences instead.
         let body = try XCTUnwrap(request.httpBody)
-        XCTAssertTrue(body.contains(text: "name=\"model\"\r\n\r\ngcoli/whisper-large-v3-swiss-german-mlx-fp16"))
+        XCTAssertTrue(body.contains(text: "name=\"model\"\r\n\r\ngcoli/whisper-large-v3-swiss-german-mlx-q8"))
         XCTAssertTrue(body.contains(text: "name=\"language\"\r\n\r\nde"))
         XCTAssertTrue(body.contains(text: "filename=\"audio.wav\""))
         XCTAssertTrue(body.contains(text: "RIFF"))
