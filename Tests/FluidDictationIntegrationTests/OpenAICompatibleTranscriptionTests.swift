@@ -113,17 +113,17 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
         XCTAssertEqual(wav.count, 44)
     }
 
-    // MARK: - Swiss German Q4 Preview Model
+    // MARK: - Swiss German Q8 Preview Model
 
-    func testSwissGermanQ4ModelMetadata() {
-        let model = SettingsStore.SpeechModel.whisperSwissGermanQ4
+    func testSwissGermanQ8ModelMetadata() {
+        let model = SettingsStore.SpeechModel.whisperSwissGermanQ8
         // The GGUF installed-check compares the on-disk size against this exact
         // byte count; it must match the file published on Hugging Face.
-        XCTAssertEqual(model.expectedDownloadBytes, 901_544_064)
-        XCTAssertEqual(model.whisperModelFile, "whisper-large-v3-swiss-german-Q4_0.gguf")
+        XCTAssertEqual(model.expectedDownloadBytes, 1_668_741_504)
+        XCTAssertEqual(model.whisperModelFile, "whisper-large-v3-swiss-german-Q8_0.gguf")
         XCTAssertEqual(
             model.whisperModelDownloadOverrideURL?.absoluteString,
-            "https://huggingface.co/gcoli/whisper-large-v3-swiss-german-gguf-q4_0/resolve/main/whisper-large-v3-swiss-german-Q4_0.gguf"
+            "https://huggingface.co/gcoli/whisper-large-v3-swiss-german-gguf-q8_0/resolve/main/whisper-large-v3-swiss-german-Q8_0.gguf"
         )
         XCTAssertTrue(model.isWhisperModel)
         XCTAssertFalse(model.supportsStreaming)
@@ -134,7 +134,7 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
     }
 
     func testCustomServerModelStreamsViaLocalPreview() {
-        // The custom server model advertises streaming (served by the local Q4
+        // The custom server model advertises streaming (served by the local Q8
         // preview engine) while the toggle is on; the remote round-trip itself
         // stays batch-only either way.
         let settings = SettingsStore.shared
@@ -175,25 +175,25 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
     }
 
     func testStreamingReturnsEmptyResultWithoutInstalledPreviewModel() async throws {
-        // Preview provider factory that must never be invoked when the Q4 model
+        // Preview provider factory that must never be invoked when the Q8 model
         // is absent — streaming degrades to empty text without any network call.
         final class FailingProvider: TranscriptionProvider {
             var name: String { "failing" }
             var isAvailable: Bool { true }
             var isReady: Bool { false }
             func prepare(progressHandler: ((ModelPreparationProgress) -> Void)?) async throws {
-                XCTFail("preview provider must not be prepared when Q4 model is not installed")
+                XCTFail("preview provider must not be prepared when Q8 model is not installed")
             }
 
             func transcribe(_ samples: [Float]) async throws -> ASRTranscriptionResult {
-                XCTFail("preview provider must not transcribe when Q4 model is not installed")
+                XCTFail("preview provider must not transcribe when Q8 model is not installed")
                 return ASRTranscriptionResult(text: "unexpected")
             }
         }
 
         try XCTSkipIf(
-            SettingsStore.SpeechModel.whisperSwissGermanQ4.isInstalled,
-            "Q4 model is installed on this machine; the degradation path is not reachable"
+            SettingsStore.SpeechModel.whisperSwissGermanQ8.isInstalled,
+            "Q8 model is installed on this machine; the degradation path is not reachable"
         )
 
         let settings = SettingsStore.shared

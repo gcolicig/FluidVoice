@@ -18,13 +18,13 @@ Vorschau und Finale sind getrennte Engines; das `TranscriptionProvider`-Protokol
 sieht das explizit vor (`transcribeStreaming` = "faster/lighter paths",
 `transcribeFinal` = Qualität).
 
-- **Vorschau:** `gcoli/whisper-large-v3-swiss-german-gguf-q4_0` (902 MB,
+- **Vorschau:** `gcoli/whisper-large-v3-swiss-german-gguf-q8_0` (1.67 GB,
   gebaut für `handy-computer/transcribe.cpp`), läuft **in-process** über den
   bestehenden `WhisperProvider` — kein Netzwerk, konstante Serverlast null.
-  In der App als eigenständiges Modell "Whisper Swiss German (Q4)" wählbar
+  In der App als eigenständiges Modell "Whisper Swiss German (Q8)" wählbar
   (damit auch komplett offline diktierbar).
 - **Finale:** fp16 via oMLX (maximale Genauigkeit, ein Request pro Äusserung).
-- Graceful Degradation: Ist das Q4-Modell nicht installiert, zeigt das Overlay
+- Graceful Degradation: Ist das Q8-Modell nicht installiert, zeigt das Overlay
   wie zuvor nur die Wellenform; das Diktat funktioniert unverändert.
 
 ### 2. Sliding Window mit Prefix-Commit (LocalAgreement)
@@ -68,4 +68,4 @@ Wer echtes natives Streaming jetzt will, hat zwei Wege, beide ohne oMLX:
 
 Kombinierbar: Ansatz 1 (Zwei-Modell) plus Ansatz 2 als Commit-Logik über der
 Vorschau wäre die Ausbaustufe, falls die Vorschau bei langen Diktaten zu träge
-wird (lokale large-Q4-Pässe wachsen mit der Pufferlänge).
+wird (lokale large-Q8-Pässe wachsen mit der Pufferlänge).

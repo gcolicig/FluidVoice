@@ -44,7 +44,7 @@ final class OpenAICompatibleTranscriptionProvider: TranscriptionProvider {
 
     private let session: URLSession
 
-    /// Local Swiss German Q4 GGUF used for live streaming previews only.
+    /// Local Swiss German Q8 GGUF used for live streaming previews only.
     /// The final transcription always goes to the remote server; if the local
     /// model is not installed, previews degrade to the waveform-only overlay.
     private let makePreviewProvider: () -> TranscriptionProvider
@@ -54,7 +54,7 @@ final class OpenAICompatibleTranscriptionProvider: TranscriptionProvider {
     init(
         session: URLSession? = nil,
         makePreviewProvider: @escaping () -> TranscriptionProvider = {
-            WhisperProvider(modelOverride: .whisperSwissGermanQ4)
+            WhisperProvider(modelOverride: .whisperSwissGermanQ8)
         }
     ) {
         self.makePreviewProvider = makePreviewProvider
@@ -116,19 +116,19 @@ final class OpenAICompatibleTranscriptionProvider: TranscriptionProvider {
         // No local cache
     }
 
-    // MARK: - Streaming Preview (local Swiss German Q4)
+    // MARK: - Streaming Preview (local Swiss German Q8)
 
     func transcribeStreaming(_ samples: [Float]) async throws -> ASRTranscriptionResult {
         // Never route previews over HTTP: chunked re-transcription would hammer
-        // the server. Preview locally when enabled and the Q4 model is
+        // the server. Preview locally when enabled and the Q8 model is
         // installed, otherwise return empty text so the overlay keeps its
         // waveform-only state.
         guard SettingsStore.shared.customASRLivePreviewEnabled else {
-            // Release the ~1 GB GGUF when the user turns previews off mid-session.
+            // Release the ~1.7 GB GGUF when the user turns previews off mid-session.
             self.previewProvider = nil
             return ASRTranscriptionResult(text: "")
         }
-        guard SettingsStore.SpeechModel.whisperSwissGermanQ4.isInstalled, !self.previewPrepareFailed else {
+        guard SettingsStore.SpeechModel.whisperSwissGermanQ8.isInstalled, !self.previewPrepareFailed else {
             return ASRTranscriptionResult(text: "")
         }
 
