@@ -4643,7 +4643,9 @@ final class SettingsStore: ObservableObject {
             case .customOpenAICompatible:
                 // Final transcription stays one HTTP round-trip; the live preview
                 // runs on the local Swiss German Q4 model when it is installed.
-                return true
+                // Honoring the toggle here skips the whole chunk machinery when
+                // previews are off, not just the per-chunk work.
+                return SettingsStore.shared.customASRLivePreviewEnabled
             default:
                 return true // All other models support streaming
             }
@@ -5091,6 +5093,7 @@ private extension SettingsStore {
         static let customASRBaseURL = "CustomASRBaseURL"
         static let customASRModelName = "CustomASRModelName"
         static let customASRLanguage = "CustomASRLanguage"
+        static let customASRLivePreviewEnabled = "CustomASRLivePreviewEnabled"
 
         // Overlay Position
         static let overlayPosition = "OverlayPosition"
@@ -5411,6 +5414,19 @@ extension SettingsStore {
         set {
             objectWillChange.send()
             self.defaults.set(newValue, forKey: Keys.customASRLanguage)
+        }
+    }
+
+    /// Whether the custom server model shows a live preview while speaking,
+    /// powered by the local Swiss German Q4 model. Off keeps the GGUF on disk
+    /// for standalone use but saves the ~1 GB it occupies once loaded.
+    var customASRLivePreviewEnabled: Bool {
+        get {
+            self.defaults.object(forKey: Keys.customASRLivePreviewEnabled) as? Bool ?? true
+        }
+        set {
+            objectWillChange.send()
+            self.defaults.set(newValue, forKey: Keys.customASRLivePreviewEnabled)
         }
     }
 

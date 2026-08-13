@@ -656,7 +656,10 @@ extension VoiceEngineSettingsView {
                     .textFieldStyle(.roundedBorder)
             }
 
-            Text("Live preview while speaking uses the local \"Whisper Swiss German (Q4)\" model — install it from the model list to enable previews.")
+            Toggle("Live preview while speaking", isOn: self.$settings.customASRLivePreviewEnabled)
+                .font(self.theme.typography.bodySmall)
+
+            Text("Previews run on the local \"Whisper Swiss German (Q4)\" model — install it from the model list. Turning previews off frees the ~1 GB it uses in memory.")
                 .font(self.theme.typography.bodySmall)
                 .foregroundStyle(self.voiceEngineTertiaryText)
         }

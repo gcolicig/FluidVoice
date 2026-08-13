@@ -135,9 +135,43 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
 
     func testCustomServerModelStreamsViaLocalPreview() {
         // The custom server model advertises streaming (served by the local Q4
-        // preview engine), while the remote round-trip itself stays batch-only.
+        // preview engine) while the toggle is on; the remote round-trip itself
+        // stays batch-only either way.
+        let settings = SettingsStore.shared
+        let original = settings.customASRLivePreviewEnabled
+        defer { settings.customASRLivePreviewEnabled = original }
+
+        settings.customASRLivePreviewEnabled = true
         XCTAssertTrue(SettingsStore.SpeechModel.customOpenAICompatible.supportsStreaming)
         XCTAssertEqual(SettingsStore.SpeechModel.customOpenAICompatible.streamingPreviewIntervalSeconds, 1.0)
+
+        settings.customASRLivePreviewEnabled = false
+        XCTAssertFalse(SettingsStore.SpeechModel.customOpenAICompatible.supportsStreaming)
+    }
+
+    func testStreamingReturnsEmptyResultWhenPreviewDisabled() async throws {
+        final class UnexpectedProvider: TranscriptionProvider {
+            var name: String { "unexpected" }
+            var isAvailable: Bool { true }
+            var isReady: Bool { false }
+            func prepare(progressHandler: ((ModelPreparationProgress) -> Void)?) async throws {
+                XCTFail("preview provider must not be prepared while previews are disabled")
+            }
+
+            func transcribe(_ samples: [Float]) async throws -> ASRTranscriptionResult {
+                XCTFail("preview provider must not transcribe while previews are disabled")
+                return ASRTranscriptionResult(text: "unexpected")
+            }
+        }
+
+        let settings = SettingsStore.shared
+        let original = settings.customASRLivePreviewEnabled
+        defer { settings.customASRLivePreviewEnabled = original }
+        settings.customASRLivePreviewEnabled = false
+
+        let provider = OpenAICompatibleTranscriptionProvider(makePreviewProvider: { UnexpectedProvider() })
+        let result = try await provider.transcribeStreaming([0.0, 0.1, -0.1])
+        XCTAssertEqual(result.text, "")
     }
 
     func testStreamingReturnsEmptyResultWithoutInstalledPreviewModel() async throws {
@@ -161,6 +195,11 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
             SettingsStore.SpeechModel.whisperSwissGermanQ4.isInstalled,
             "Q4 model is installed on this machine; the degradation path is not reachable"
         )
+
+        let settings = SettingsStore.shared
+        let original = settings.customASRLivePreviewEnabled
+        defer { settings.customASRLivePreviewEnabled = original }
+        settings.customASRLivePreviewEnabled = true
 
         let provider = OpenAICompatibleTranscriptionProvider(makePreviewProvider: { FailingProvider() })
         let result = try await provider.transcribeStreaming([0.0, 0.1, -0.1])
