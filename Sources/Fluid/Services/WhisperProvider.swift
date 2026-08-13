@@ -75,6 +75,9 @@ final class WhisperProvider: TranscriptionProvider {
     }
 
     private var modelDownloadURL: URL? {
+        if let override = self.selectedModel.whisperModelDownloadOverrideURL {
+            return override
+        }
         let modelName = self.modelName
         let suffix = "-Q8_0.gguf"
         guard modelName.hasSuffix(suffix) else { return nil }

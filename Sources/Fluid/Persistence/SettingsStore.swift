@@ -4156,6 +4156,10 @@ final class SettingsStore: ObservableObject {
 
         case customOpenAICompatible = "custom-openai-compatible"
 
+        // MARK: - Custom Local (Swiss German GGUF via transcribe.cpp)
+
+        case whisperSwissGermanQ4 = "whisper-swiss-german-q4"
+
         var id: String {
             rawValue
         }
@@ -4181,6 +4185,7 @@ final class SettingsStore: ObservableObject {
             case .whisperLargeTurbo: return "Whisper Large Turbo"
             case .whisperLarge: return "Whisper Large"
             case .customOpenAICompatible: return "Custom Server (OpenAI API)"
+            case .whisperSwissGermanQ4: return "Whisper Swiss German (Q4)"
             }
         }
 
@@ -4199,6 +4204,8 @@ final class SettingsStore: ObservableObject {
                 return "99 Languages"
             case .customOpenAICompatible:
                 return "Depends on Server Model"
+            case .whisperSwissGermanQ4:
+                return "Swiss German (DE output)"
             }
         }
 
@@ -4221,6 +4228,7 @@ final class SettingsStore: ObservableObject {
             case .whisperLargeTurbo: return "~845.3 MiB"
             case .whisperLarge: return "~1.55 GiB"
             case .customOpenAICompatible: return "No Download"
+            case .whisperSwissGermanQ4: return "~902 MB"
             }
         }
 
@@ -4240,6 +4248,7 @@ final class SettingsStore: ObservableObject {
             case .whisperLargeTurbo: return 886_381_760
             case .whisperLarge: return 1_668_741_440
             case .appleSpeech, .appleSpeechAnalyzer, .customOpenAICompatible: return 0
+            case .whisperSwissGermanQ4: return 901_544_064
             }
         }
 
@@ -4266,7 +4275,21 @@ final class SettingsStore: ObservableObject {
             case .whisperMedium: return "whisper-medium-Q8_0.gguf"
             case .whisperLargeTurbo: return "whisper-large-v3-turbo-Q8_0.gguf"
             case .whisperLarge: return "whisper-large-v3-Q8_0.gguf"
+            case .whisperSwissGermanQ4: return "whisper-large-v3-swiss-german-Q4_0.gguf"
             default: return nil
+            }
+        }
+
+        /// Full download URL for GGUF models hosted outside the default
+        /// `handy-computer` namespace that WhisperProvider derives URLs from.
+        var whisperModelDownloadOverrideURL: URL? {
+            switch self {
+            case .whisperSwissGermanQ4:
+                return URL(
+                    string: "https://huggingface.co/gcoli/whisper-large-v3-swiss-german-gguf-q4_0/resolve/main/whisper-large-v3-swiss-german-Q4_0.gguf"
+                )
+            default:
+                return nil
             }
         }
 
@@ -4331,6 +4354,9 @@ final class SettingsStore: ObservableObject {
                 if model == .whisperLarge, !CPUArchitecture.isAppleSilicon {
                     return false
                 }
+                if model == .whisperSwissGermanQ4, !CPUArchitecture.isAppleSilicon {
+                    return false
+                }
                 if model == .qwen3Asr, !Self.qwenPreviewEnabled {
                     return false
                 }
@@ -4384,6 +4410,7 @@ final class SettingsStore: ObservableObject {
             case .whisperLargeTurbo: return "Higher Quality but Faster"
             case .whisperLarge: return "Maximum Accuracy"
             case .customOpenAICompatible: return "Your Own Server"
+            case .whisperSwissGermanQ4: return "Schweizerdeutsch Offline"
             }
         }
 
@@ -4427,6 +4454,8 @@ final class SettingsStore: ObservableObject {
                 return "Best possible accuracy. Large download and memory usage."
             case .customOpenAICompatible:
                 return "Send audio to any OpenAI-compatible transcription endpoint (e.g. a local oMLX server with a custom Whisper model). Configure base URL, model name, and API key below."
+            case .whisperSwissGermanQ4:
+                return "Whisper Large v3 fine-tuned for Swiss German dialects, quantized to Q4 and running fully offline. Also serves as the live-preview engine for the Custom Server model."
             }
         }
 
@@ -4457,6 +4486,8 @@ final class SettingsStore: ObservableObject {
                 return 8.0
             case .customOpenAICompatible:
                 return 2.0 // Remote inference, minimal local overhead
+            case .whisperSwissGermanQ4:
+                return 5.0
             }
         }
 
@@ -4495,6 +4526,7 @@ final class SettingsStore: ObservableObject {
             case .whisperLargeTurbo: return 3
             case .whisperLarge: return 1
             case .customOpenAICompatible: return 3
+            case .whisperSwissGermanQ4: return 3
             }
         }
 
@@ -4517,6 +4549,7 @@ final class SettingsStore: ObservableObject {
             case .whisperLargeTurbo: return 5
             case .whisperLarge: return 5
             case .customOpenAICompatible: return 4
+            case .whisperSwissGermanQ4: return 5
             }
         }
 
@@ -4539,6 +4572,7 @@ final class SettingsStore: ObservableObject {
             case .whisperLargeTurbo: return 0.65
             case .whisperLarge: return 0.20
             case .customOpenAICompatible: return 0.60
+            case .whisperSwissGermanQ4: return 0.65
             }
         }
 
@@ -4561,6 +4595,7 @@ final class SettingsStore: ObservableObject {
             case .whisperLargeTurbo: return 0.95
             case .whisperLarge: return 1.00
             case .customOpenAICompatible: return 0.85
+            case .whisperSwissGermanQ4: return 0.90
             }
         }
 
@@ -4592,10 +4627,12 @@ final class SettingsStore: ObservableObject {
         /// Large Whisper models are too slow for streaming, so they only do final transcription on stop.
         var supportsStreaming: Bool {
             switch self {
-            case .qwen3Asr, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
+            case .qwen3Asr, .whisperMedium, .whisperLargeTurbo, .whisperLarge, .whisperSwissGermanQ4:
                 return false // Too slow for real-time chunk processing
             case .customOpenAICompatible:
-                return false // One HTTP round-trip per utterance; no incremental decoding
+                // Final transcription stays one HTTP round-trip; the live preview
+                // runs on the local Swiss German Q4 model when it is installed.
+                return true
             default:
                 return true // All other models support streaming
             }
@@ -4624,6 +4661,8 @@ final class SettingsStore: ObservableObject {
                 return 0.32
             case .cohereTranscribeSixBit:
                 return 1.0
+            case .customOpenAICompatible:
+                return 1.0 // Local large-Q4 preview passes need more headroom than 0.6s
             default:
                 return 0.6
             }
@@ -4667,7 +4706,7 @@ final class SettingsStore: ObservableObject {
                 return .cohere
             case .whisperTiny, .whisperBase, .whisperSmall, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
                 return .openai
-            case .customOpenAICompatible:
+            case .customOpenAICompatible, .whisperSwissGermanQ4:
                 return .custom
             }
         }
@@ -4798,7 +4837,7 @@ final class SettingsStore: ObservableObject {
                 return "Apple"
             case .whisperTiny, .whisperBase, .whisperSmall, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
                 return "OpenAI"
-            case .customOpenAICompatible:
+            case .customOpenAICompatible, .whisperSwissGermanQ4:
                 return "Custom"
             }
         }
@@ -4833,8 +4872,8 @@ final class SettingsStore: ObservableObject {
                 return "#A2AAAD" // Apple Gray
             case .whisperTiny, .whisperBase, .whisperSmall, .whisperMedium, .whisperLargeTurbo, .whisperLarge:
                 return "#10A37F" // OpenAI Teal
-            case .customOpenAICompatible:
-                return "#6E56CF" // Violet for custom endpoints
+            case .customOpenAICompatible, .whisperSwissGermanQ4:
+                return "#6E56CF" // Violet for custom models
             }
         }
     }
@@ -5345,7 +5384,7 @@ extension SettingsStore {
     var customASRModelName: String {
         get {
             self.defaults.string(forKey: Keys.customASRModelName)
-                ?? "gcoli/whisper-large-v3-swiss-german-mlx-q8"
+                ?? "gcoli/whisper-large-v3-swiss-german-mlx-fp16"
         }
         set {
             objectWillChange.send()

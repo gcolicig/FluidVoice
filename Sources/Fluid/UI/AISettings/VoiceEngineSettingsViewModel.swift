@@ -229,7 +229,9 @@ final class VoiceEngineSettingsViewModel: ObservableObject {
         case .nemotronStreaming, .nemotronStreaming320:
             return "Nemotron Speech 3.5 Streaming Capable uses NVIDIA's streaming CoreML pipeline. Supports around 40 languages with auto or manual language selection."
         case .customOpenAICompatible:
-            return "Custom Server sends recorded audio to any OpenAI-compatible /audio/transcriptions endpoint, such as a local oMLX server with your own Whisper model."
+            return "Custom Server sends recorded audio to any OpenAI-compatible /audio/transcriptions endpoint, such as a local oMLX server with your own Whisper model. Live preview uses the local Swiss German Q4 model when installed."
+        case .whisperSwissGermanQ4:
+            return "Whisper Swiss German runs a Q4-quantized Swiss German fine-tune of Whisper Large v3 fully offline via transcribe.cpp. It also powers the live preview of the Custom Server model."
         default:
             return "Whisper models support 99 languages and work on any Mac."
         }

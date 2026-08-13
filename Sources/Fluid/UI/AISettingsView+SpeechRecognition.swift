@@ -629,7 +629,7 @@ extension VoiceEngineSettingsView {
                 Text("Model")
                     .font(self.theme.typography.bodySmall)
                     .foregroundStyle(self.voiceEngineSecondaryText)
-                TextField("e.g. gcoli/whisper-large-v3-swiss-german-mlx-q8", text: self.$settings.customASRModelName)
+                TextField("e.g. gcoli/whisper-large-v3-swiss-german-mlx-fp16", text: self.$settings.customASRModelName)
                     .textFieldStyle(.roundedBorder)
             }
 
@@ -655,6 +655,10 @@ extension VoiceEngineSettingsView {
                 TextField("Leave empty for auto-detect, e.g. de", text: self.$settings.customASRLanguage)
                     .textFieldStyle(.roundedBorder)
             }
+
+            Text("Live preview while speaking uses the local \"Whisper Swiss German (Q4)\" model — install it from the model list to enable previews.")
+                .font(self.theme.typography.bodySmall)
+                .foregroundStyle(self.voiceEngineTertiaryText)
         }
         .padding(14)
         .frame(width: 320)

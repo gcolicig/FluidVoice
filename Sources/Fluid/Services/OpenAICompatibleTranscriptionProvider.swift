@@ -44,7 +44,20 @@ final class OpenAICompatibleTranscriptionProvider: TranscriptionProvider {
 
     private let session: URLSession
 
-    init(session: URLSession? = nil) {
+    /// Local Swiss German Q4 GGUF used for live streaming previews only.
+    /// The final transcription always goes to the remote server; if the local
+    /// model is not installed, previews degrade to the waveform-only overlay.
+    private let makePreviewProvider: () -> TranscriptionProvider
+    private var previewProvider: TranscriptionProvider?
+    private var previewPrepareFailed = false
+
+    init(
+        session: URLSession? = nil,
+        makePreviewProvider: @escaping () -> TranscriptionProvider = {
+            WhisperProvider(modelOverride: .whisperSwissGermanQ4)
+        }
+    ) {
+        self.makePreviewProvider = makePreviewProvider
         if let session {
             self.session = session
         } else {
@@ -101,6 +114,41 @@ final class OpenAICompatibleTranscriptionProvider: TranscriptionProvider {
 
     func clearCache() async throws {
         // No local cache
+    }
+
+    // MARK: - Streaming Preview (local Swiss German Q4)
+
+    func transcribeStreaming(_ samples: [Float]) async throws -> ASRTranscriptionResult {
+        // Never route previews over HTTP: chunked re-transcription would hammer
+        // the server. Preview locally when the Q4 model is installed, otherwise
+        // return empty text so the overlay keeps its waveform-only state.
+        guard SettingsStore.SpeechModel.whisperSwissGermanQ4.isInstalled, !self.previewPrepareFailed else {
+            return ASRTranscriptionResult(text: "")
+        }
+
+        let provider: TranscriptionProvider
+        if let existing = previewProvider {
+            provider = existing
+        } else {
+            provider = self.makePreviewProvider()
+            self.previewProvider = provider
+        }
+
+        if !provider.isReady {
+            do {
+                try await provider.prepare(progressHandler: nil)
+            } catch {
+                // One failed load (e.g. corrupt file) must not fail every chunk.
+                self.previewPrepareFailed = true
+                DebugLogger.shared.error(
+                    "Local preview model failed to load, previews disabled: \(error.localizedDescription)",
+                    source: "OpenAICompatibleTranscriptionProvider"
+                )
+                return ASRTranscriptionResult(text: "")
+            }
+        }
+
+        return try await provider.transcribeStreaming(samples)
     }
 
     // MARK: - Transcription

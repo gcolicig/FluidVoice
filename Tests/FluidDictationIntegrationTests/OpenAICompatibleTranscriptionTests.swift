@@ -39,7 +39,7 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
         let request = try OpenAICompatibleTranscriptionProvider.makeRequest(
             baseURL: "http://127.0.0.1:8888/v1",
             apiKey: "test-key",
-            modelName: "gcoli/whisper-large-v3-swiss-german-mlx-q8",
+            modelName: "gcoli/whisper-large-v3-swiss-german-mlx-fp16",
             language: "de",
             wavData: wav
         )
@@ -52,7 +52,7 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
         // The body mixes text fields with raw WAV bytes, so it is not decodable as UTF-8.
         // Match the field markers as byte sequences instead.
         let body = try XCTUnwrap(request.httpBody)
-        XCTAssertTrue(body.contains(text: "name=\"model\"\r\n\r\ngcoli/whisper-large-v3-swiss-german-mlx-q8"))
+        XCTAssertTrue(body.contains(text: "name=\"model\"\r\n\r\ngcoli/whisper-large-v3-swiss-german-mlx-fp16"))
         XCTAssertTrue(body.contains(text: "name=\"language\"\r\n\r\nde"))
         XCTAssertTrue(body.contains(text: "filename=\"audio.wav\""))
         XCTAssertTrue(body.contains(text: "RIFF"))
@@ -111,6 +111,56 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
     func testWAVEncodingEmptySamples() {
         let wav = OpenAICompatibleTranscriptionProvider.encodeWAV(samples: [], sampleRate: 16000)
         XCTAssertEqual(wav.count, 44)
+    }
+
+    // MARK: - Swiss German Q4 Preview Model
+
+    func testSwissGermanQ4ModelMetadata() {
+        let model = SettingsStore.SpeechModel.whisperSwissGermanQ4
+        // The GGUF installed-check compares the on-disk size against this exact
+        // byte count; it must match the file published on Hugging Face.
+        XCTAssertEqual(model.expectedDownloadBytes, 901_544_064)
+        XCTAssertEqual(model.whisperModelFile, "whisper-large-v3-swiss-german-Q4_0.gguf")
+        XCTAssertEqual(
+            model.whisperModelDownloadOverrideURL?.absoluteString,
+            "https://huggingface.co/gcoli/whisper-large-v3-swiss-german-gguf-q4_0/resolve/main/whisper-large-v3-swiss-german-Q4_0.gguf"
+        )
+        XCTAssertTrue(model.isWhisperModel)
+        XCTAssertFalse(model.supportsStreaming)
+    }
+
+    func testCustomServerModelStreamsViaLocalPreview() {
+        // The custom server model advertises streaming (served by the local Q4
+        // preview engine), while the remote round-trip itself stays batch-only.
+        XCTAssertTrue(SettingsStore.SpeechModel.customOpenAICompatible.supportsStreaming)
+        XCTAssertEqual(SettingsStore.SpeechModel.customOpenAICompatible.streamingPreviewIntervalSeconds, 1.0)
+    }
+
+    func testStreamingReturnsEmptyResultWithoutInstalledPreviewModel() async throws {
+        // Preview provider factory that must never be invoked when the Q4 model
+        // is absent — streaming degrades to empty text without any network call.
+        final class FailingProvider: TranscriptionProvider {
+            var name: String { "failing" }
+            var isAvailable: Bool { true }
+            var isReady: Bool { false }
+            func prepare(progressHandler: ((ModelPreparationProgress) -> Void)?) async throws {
+                XCTFail("preview provider must not be prepared when Q4 model is not installed")
+            }
+
+            func transcribe(_ samples: [Float]) async throws -> ASRTranscriptionResult {
+                XCTFail("preview provider must not transcribe when Q4 model is not installed")
+                return ASRTranscriptionResult(text: "unexpected")
+            }
+        }
+
+        try XCTSkipIf(
+            SettingsStore.SpeechModel.whisperSwissGermanQ4.isInstalled,
+            "Q4 model is installed on this machine; the degradation path is not reachable"
+        )
+
+        let provider = OpenAICompatibleTranscriptionProvider(makePreviewProvider: { FailingProvider() })
+        let result = try await provider.transcribeStreaming([0.0, 0.1, -0.1])
+        XCTAssertEqual(result.text, "")
     }
 }
 
