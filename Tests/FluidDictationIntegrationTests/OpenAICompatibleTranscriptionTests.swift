@@ -127,6 +127,10 @@ final class OpenAICompatibleTranscriptionTests: XCTestCase {
         )
         XCTAssertTrue(model.isWhisperModel)
         XCTAssertFalse(model.supportsStreaming)
+        // Forced decode language prevents autodetect hallucinations on short
+        // preview chunks; other whisper models keep autodetection.
+        XCTAssertEqual(model.whisperForcedLanguage, "de")
+        XCTAssertNil(SettingsStore.SpeechModel.whisperLarge.whisperForcedLanguage)
     }
 
     func testCustomServerModelStreamsViaLocalPreview() {

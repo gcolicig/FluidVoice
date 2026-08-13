@@ -314,7 +314,10 @@ final class WhisperProvider: TranscriptionProvider {
 
         let transcript = try await session.run(
             samples,
-            options: RunOptions(timestamps: .segment)
+            options: RunOptions(
+                timestamps: .segment,
+                language: self.selectedModel.whisperForcedLanguage
+            )
         )
         let fullText = transcript.text.trimmingCharacters(in: .whitespacesAndNewlines)
         return ASRTranscriptionResult(text: fullText, confidence: 1.0)

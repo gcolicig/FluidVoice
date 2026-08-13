@@ -4280,6 +4280,17 @@ final class SettingsStore: ObservableObject {
             }
         }
 
+        /// Language forced at decode time instead of Whisper's autodetection.
+        /// Autodetect on short or quiet chunks misfires badly for a
+        /// dialect-specialized model (Japanese outro hallucinations), and the
+        /// Swiss German fine-tune documents `de` as its intended token.
+        var whisperForcedLanguage: String? {
+            switch self {
+            case .whisperSwissGermanQ4: return "de"
+            default: return nil
+            }
+        }
+
         /// Full download URL for GGUF models hosted outside the default
         /// `handy-computer` namespace that WhisperProvider derives URLs from.
         var whisperModelDownloadOverrideURL: URL? {
